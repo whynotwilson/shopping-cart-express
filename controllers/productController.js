@@ -6,6 +6,10 @@ const PAGE_OFFSET = 0;
 let productController = {
   getProducts: (req, res) => {
     Product.findAndCountAll({ offset: PAGE_OFFSET, limit: PAGE_LIMIT }).then(products => {
+      products = products.rows.map(product => ({
+        ...product.dataValues
+      }))
+      // console.log('products', products)
       return res.render('products', {
         products
       })

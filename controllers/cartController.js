@@ -1,6 +1,7 @@
 const db = require('../models')
 const Cart = db.Cart
 const CartItem = db.CartItem
+const sequelize = require('sequelize')
 const PAGE_LIMIT = 10;
 const PAGE_OFFSET = 0;
 
@@ -16,33 +17,39 @@ let cartController = {
     })
   },
 
-  postCart: (req, res) => {
-    return Cart.findOrCreate({
-      where: {
-        id: req.session.cartId || 0,
-      },
-    }).spread(function (cart, created) {
-      return CartItem.findOrCreate({
+  postCart: async (req, res) => {
+    try {
+      const cart = await Cart.findOrCreate({ where: { id: req.session.cartId || 0 } })
+
+      const cartItem = await CartItem.findOrCreate({
         where: {
-          CartId: cart.id,
-          ProductId: req.body.productId
+          CartId: cart[0].dataValues.id,
+          ProductId: req.body.productId,
         },
         default: {
-          CartId: cart.id,
+          CartId: cart[0].dataValues.id,
           ProductId: req.body.productId,
         }
-      }).spread(function (cartItem, created) {
-        return cartItem.update({
-          quantity: (cartItem.quantity || 0) + 1,
-        })
-          .then((cartItem) => {
-            req.session.cartId = cart.id
-            return req.session.save(() => {
-              return res.redirect('back')
-            })
-          })
       })
-    });
+
+      await CartItem.update({
+        CartId: cart[0].dataValues.id,
+        ProductId: req.body.productId,
+        quantity: (cartItem[0].dataValues.quantity || 0) + 1
+      }, {
+        where: {
+          CartId: cart[0].dataValues.id,
+          ProductId: req.body.productId
+        }
+      })
+
+      req.session.cartId = cart[0].dataValues.id
+      return req.session.save(() => {
+        return res.redirect('back')
+      })
+    } catch (error) {
+      console.log('error', error)
+    }
   },
 }
 
