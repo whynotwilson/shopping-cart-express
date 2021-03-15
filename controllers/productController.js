@@ -9,7 +9,6 @@ let productController = {
       products = products.rows.map(product => ({
         ...product.dataValues
       }))
-      // console.log('products', products)
       return res.render('products', {
         products
       })
