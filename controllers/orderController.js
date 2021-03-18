@@ -1,7 +1,21 @@
 const db = require('../models')
+const nodemailer = require('nodemailer')
 const Order = db.Order
 const OrderItem = db.OrderItem
 const Cart = db.Cart
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  secureConnection: true,
+  auth: {
+    user: '',
+    pass: '',
+  },
+  // 不得檢查服務器所發送的憑證
+  // tls: {
+  //   rejectUnauthorized: false
+  // }
+})
 
 let orderController = {
   getOrders: (req, res) => {
@@ -14,9 +28,6 @@ let orderController = {
           ...item.dataValues
         }))
       }
-      console.log('orders', orders)
-      console.log('')
-      console.log('orders[2].items', orders[2].items)
       return res.render('orders', {
         orders
       })
@@ -46,6 +57,21 @@ let orderController = {
             })
           );
         }
+
+        var mailOptions = {
+          from: '',
+          to: '',
+          subject: `${order.id} 訂單成立`,
+          text: `${order.id} 訂單成立`,
+        };
+
+        transporter.sendMail(mailOptions, function (error, info) {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        });
 
         return Promise.all(results).then(() =>
           res.redirect('/orders')
