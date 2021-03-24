@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 const Order = db.Order
 const OrderItem = db.OrderItem
 const Cart = db.Cart
+const sequelize = require('sequelize')
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -182,21 +183,28 @@ let orderController = {
     })
   },
 
-  getPayment: (req, res) => {
-    console.log('===== getPayment =====')
-    console.log(req.params.id)
-    console.log('==========')
+  getPayment: async (req, res) => {
+    try {
+      console.log('===== getPayment =====')
+      console.log(req.params.id)
+      console.log('==========')
 
-    return Order.findByPk(req.params.id, {}).then(order => {
+      let order = await Order.findByPk(req.params.id, {})
       order = order.dataValues
       const tradeInfo = getTradeInfo(order.amount, '產品名稱', 'shopping_cart_express@gmail.com')
-      order.update({
+      await Order.update({
         ...req.body,
         sn: tradeInfo.MerchantOrderNo,
-      }).then(order => {
-        res.render('payment', { order, tradeInfo })
+      }, {
+        where: {
+          id: req.params.id
+        }
       })
-    })
+
+      res.render('payment', { order, tradeInfo })
+    } catch (error) {
+      console.log('error: ', error)
+    }
   },
 
   spgatewayCallback: (req, res) => {
